@@ -43,7 +43,7 @@ Ensure you have the following packages installed on your Linux server:
 1. **Clone the Repository**:
     
     ```bash
-    git clone <https://github.com/your-repo/security-audit.git>
+    git clone <https://github.com/PRATIKNALAWADE/Audit-ServerHardening.git>
     cd security-audit
     
     ```
