@@ -1,0 +1,135 @@
+#!/bin/bash
+
+# Define variables
+CONFIG_FILE="security_checks.conf"
+LOG_FILE="security_audit.log"
+
+# Function to log messages
+function log_message() {
+    echo "$(date): $1" | tee -a $LOG_FILE
+}
+
+# User and Group Audits
+function user_group_audit() {
+    log_message "User and Group Audit:"
+    echo "Users and Groups:"
+    cut -d: -f1 /etc/passwd
+    echo "Groups:"
+    cut -d: -f1 /etc/group
+    echo
+}
+
+# File and Directory Permissions
+function file_permissions() {
+    log_message "File and Directory Permissions:"
+    echo "World-writable files:"
+    find / -type f -perm -002 -exec ls -l {} \;
+    echo "World-writable directories:"
+    find / -type d -perm -002 -exec ls -ld {} \;
+    echo "SUID/SGID files:"
+    find / -perm /6000 -exec ls -l {} \;
+    echo
+}
+
+# Service Audits
+function service_audit() {
+    log_message "Service Audit:"
+    echo "Running services:"
+    systemctl list-units --type=service --state=running
+    echo "Critical services:"
+    for service in sshd iptables; do
+        systemctl status $service | grep "Active:"
+    done
+    echo
+}
+
+# Firewall and Network Security
+function firewall_network() {
+    log_message "Firewall and Network Security:"
+    echo "Active firewall status:"
+    ufw status verbose
+    echo "Open ports and associated services:"
+    ss -tuln
+    echo "IP forwarding:"
+    sysctl net.ipv4.ip_forward
+    echo
+}
+
+# IP and Network Configuration Checks
+function ip_network() {
+    log_message "IP and Network Configuration Checks:"
+    echo "IP addresses:"
+    ip addr show
+    echo "Public vs Private IPs:"
+    # Example command - adjust for your environment
+    ip -o -4 addr show | awk '{print $2, $4}'
+    echo
+}
+
+# Security Updates and Patching
+function security_updates() {
+    log_message "Security Updates and Patching:"
+    echo "Available updates:"
+    apt list --upgradable | grep -i security
+    echo "Checking unattended-upgrades configuration:"
+    dpkg -l | grep unattended-upgrades
+    echo
+}
+
+# Log Monitoring
+function log_monitoring() {
+    log_message "Log Monitoring:"
+    echo "Recent SSH login attempts:"
+    grep "sshd" /var/log/auth.log | tail -n 50
+    echo
+}
+
+# Server Hardening Steps
+function server_hardening() {
+    log_message "Server Hardening Steps:"
+    echo "SSH Configuration:"
+    sshd_config="/etc/ssh/sshd_config"
+    echo "PasswordAuthentication no" >> $sshd_config
+    systemctl restart sshd
+    echo "IPv6 Configuration:"
+    # Example command - adjust for your environment
+    echo "Disabling IPv6..."
+    echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
+    sysctl -p
+    echo "Bootloader Security:"
+    grub-mkpasswd-pbkdf2
+    echo
+}
+
+# Custom Security Checks
+function custom_checks() {
+    log_message "Custom Security Checks:"
+    # Include custom checks as defined in the configuration file
+    while IFS= read -r line; do
+        eval $line
+    done < $CONFIG_FILE
+    echo
+}
+
+# Generate Report
+function generate_report() {
+    log_message "Generating Security Report:"
+    cat $LOG_FILE
+}
+
+# Main Function
+function main() {
+    user_group_audit
+    file_permissions
+    service_audit
+    firewall_network
+    ip_network
+    security_updates
+    log_monitoring
+    server_hardening
+    custom_checks
+    generate_report
+}
+
+# Run the main function
+main
