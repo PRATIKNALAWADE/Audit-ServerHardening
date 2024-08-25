@@ -82,7 +82,7 @@ To execute the script and perform the security audit and hardening, run:
 
 ### File and Directories Permission
 
-![FileDirPermissions.png](FileDirPermission.png)
+![FileDirPermission.png](FileDirPermissions.png)
 
 ### Service Audit
 
